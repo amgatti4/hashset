@@ -1,231 +1,136 @@
-### Pack109 Object Serialization Format
+# CSE 109 - Systems Software - Spring 2023
 
-Pack109 is a binary object serialization format that flattens a number of different datatypes into a format suitable for transmission over a channel.
+# Program 3 - HashSet
 
-#### Overview
+⏰ **Due Date: 4/10/2023 EOD**
 
-In the table below I've listed the 16 available objects in the Pack109 serialization format.
+## Instructions 
 
-| Type                    | Tag (Hex) | 
-| ----------------------- | --------- |
-| Bool (true)             |   0xa0    |
-| Bool (false)            |   0xa1    |
-| Unsigned 8-bit Integer  |   0xa2    |
-| Unsigned 32-bit Integer |   0xa3    |
-| Unsigned 64-bit Integer |   0xa4    |
-| Signed 8-bit Integer    |   0xa5    |
-| Signed 32-bit Integer   |   0xa6    |
-| Signed 64-bit Integer   |   0xa7    |
-| 32-bit Floating Number  |   0xa8    |
-| 64-bit Floating Number  |   0xa9    |
-| 8-bit String            |   0xaa    |
-| 16-bit String           |   0xab    |
-| 8-bit Array             |   0xac    |
-| 16-bit Array            |   0xad    |
-| 8-bit Map               |   0xae    |
-| 16-bit Map              |   0xaf    |
+**Read thoroughly before starting your project:**
 
-#### Notation Key
+1. Fork this repository into your CSE109 project namespace. [Instructions](https://docs.gitlab.com/ee/workflow/forking_workflow.html#creating-a-fork)
+2. Clone your newly forked repository onto your development machine. [Instructions](https://docs.gitlab.com/ee/gitlab-basics/start-using-git.html#clone-a-repository) 
+3. As you are writing code you should commit patches along the way. *i.e.* don't just submit all your code in one big commit when you're all done. Commit your progress as you work. 
 
-```
-one byte:
-┌────────┐
-│        │
-└────────┘
+**💥IMPORTANT: You must commit frequently as you work on your project. As a general rule try to make at least one commit per function you implement.**
 
-a variable number of bytes:
-╔════════╗
-║        ║
-╚════════╝
+4. When you've committed all of your work, there's nothing left to do to submit the assignment.
 
-variable number of objects stored in Pack109 format:
-╭╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-┆                 ┆
-╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
-```
+## Assignment
 
-#### Bool
+In assignment you will implement a hash set data structure in C++. The core of the hashset is an array of linked list pointers. The type of the table is a `LinkedList**`. The first star indicates it's a pointer to an array, the second star indicates each array element holds a LinkedList pointer. The Hashset also holds its size, and the current load factor. The load factor will be recalculated on each insert. 
 
-Bool is for serializing `true` and `false` boolean values. Although we can represent these values in one bit in C and C++, we have to use 8 bits to represent them in our serialized format.
+The Hashset struct is declared in `hashset.h`, along with a number of functions you will need to implement.
 
-```
-true:
-┌────────┐
-│  0xa0  │
-└────────┘ 
+```c++
+class HashSet {
+  private:
+    // The backbone of the hash set. This is an array of Linked List pointers.
+    LinkedList** array;
 
-false:
-┌────────┐
-│  0xa1  │
-└────────┘ 
-```
+    // The number of buckets in the array
+    size_t size; 
 
-#### Integers
+    // Generate a prehash for an item with a given size
+    unsigned long prehash(int item);
 
-Integers are for storing signed and unsigned `chars`, `ints`, and `longs`.
+  public:
+    // Initialize an empty hash set, where size is the number of buckets in the array
+    HashSet(size_t size);
 
-```
-u8 stores a 8-bit unsigned integer
-┌────────┬────────┐
-│  0xa2  │ZZZZZZZZ│
-└────────┴────────┘ 
+    // Free all memory allocated by the hash set
+    ~HashSet();
 
-u32 stores a 32-bit big-endian unsigned integer
-┌────────┬────────┬────────┬────────┬────────┐
-│  0xa3  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┘ 
+    // Hash an unsigned long into an index that fits into a hash set
+    unsigned long hash(int item);
 
-u64 stores a 64-bit big-endian unsigned integer
-┌────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
-│  0xa4  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘ 
+    // Insert item in the set. Return true if the item was inserted, false if it wasn't (i.e. it was already in the set)
+    // Recalculate the load factor after each successful insert (round to nearest whole number).
+    bool insert(int item);
 
-i8 stores a 8-bit signed integer
-┌────────┬────────┐
-│  0xa5  │ZZZZZZZZ│
-└────────┴────────┘ 
+    // Remove an item from the set. Return true if it was removed, false if it wasn't (i.e. it wasn't in the set to begin with)
+    bool remove(int item);
 
-i32 stores a 32-bit big-endian signed integer
-┌────────┬────────┬────────┬────────┬────────┐
-│  0xa6  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┘
+    // Return true if the item exists in the set, false otherwise
+    bool contains(int item);
 
+    // Returns the number of items in the hash set
+    size_t len();
 
-i64 stores a 64-bit big-endian signed integer
-┌────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
-│  0xa7  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
+    // Returns the number of empty buckets that can be filled before reallocating (Use a threshold of 70 for resize)
+    size_t capacity();
 
+    // Print Table. You can do this in a way that helps you implement your hash set.
+    void print();
+
+};
 ```
 
-#### Floats
+💡 Tip: Feel free to use your own linked list implementation, but don't use a standard library linked list.
 
-Floats are for serializing big-endian IEEE 754 single and double precision floating point numbers like `floats` and `doubles`. Extension of precision from single-precision to double-precision does not lose precision.
+## Makefile
 
-```
-f32 stores a single-width floating point number
-┌────────┬────────┬────────┬────────┬────────┐
-│  0xa8  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┘
+Write a Makefile inside of the project root that has the following targets:
 
-f64 stores a double-width floating point number
-┌────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┬────────┐
-│  0xa9  │ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│ZZZZZZZZ│
-└────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┴────────┘
-```
+- all - build static and shared libraries.
+- static - build a static library `libhashset.a`, put it in `build/lib/release`. Put object files in `build/objects`
+- shared - build a shared library `libhashset.so`, put it in `build/lib/release`. Put object files in `build/objects`
+- debug - build a shared library with debug symbols, put it in `build/lib/debug`. Put object files in `build/objects`
+- clean - remove all build artifacts by removing the build directory.
+- install - move the shared library to `/usr/lib`
+- test - compile `tests/test.cpp` and run it. Put the tests executable in `build/bin`. Put object files in `build/objects`
 
-#### Strings
+## Tests
 
-Strings are for serializing strings and c-strings. If you want to serialize an array of bytes that aren't meant to represent characters, use an Array instead (see below).
+Write at least 5 more tests in `tests/test.cpp`.
 
-```
-s8 stores a byte array whose length is up to (2^8)-1 bytes:
-┌────────┬────────┬════════╗
-│  0xaa  │YYYYYYYY│  data  ║
-└────────┴────────┴════════╝
+## Code Demo and Explanation
 
-YYYYYYYY is a 8-bit unsigned integer which represents the length of the data
+This is the oral portion of the homework. You will record an explanation for your data structure which demonstrates its usage and implementation. You don't have to show your face but you do have to record your voice (accommodations are available upon request). You should be sure to cover the following points in your discussion:
 
-s16 stores a byte array whose length is up to (2^16)-1 bytes:
-┌────────┬────────┬────────┬════════╗
-│  0xab  │ZZZZZZZZ│ZZZZZZZZ│  data  ║
-└────────┴────────┴────────┴════════╝
+- **Purpose and functionality of code:** Explain what your code does and how it works.
 
-ZZZZZZZZZZZZZZZZ is a 16-bit unsigned integer which represents the length of the data
-```
+- **Data structures:** Explain how the hash set data structure is implemented. How did you make use of the linked list?
 
-#### Arrays
+- **Makefile:** Explain your makefile and the various targets you were asked to write. 
 
-Arrays are for serializing arrays of homogenous datatypes. Each object in the serialized array should be one of the other objects in the Pack109 spec. For example, you can serialize an array of u8s, an array of strings, or even an array of arrays.
+- **Code organization and style:** Explain how your code is organized and structured, discuss any design decisions you made. You should also discuss your coding style and any coding conventions you followed.
 
-```
-a8 stores an array whose length is up to (2^8)-1 elements:
-┌────────┬────────┬╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-│  0xac  │YYYYYYYY│    N objects    ┆
-└────────┴────────┴╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+If you didn't finish the homework in is entirety, explain how you attempted to solve it and where you got stuck. This will get you at least some points. 
 
-YYYYYYYY is a 8-bit unsigned integer which represents the length of the data
+You can use Zoom to do this, [here is a link](https://support.zoom.us/hc/en-us/articles/360059781332-Getting-started-with-recording) to some instructions. You don't have to record your face, only your voice and the screen. Go through the answer and explain how you arrived there. Your goal with this question is to convince me you know what you are talking about, so I want you to do this without reading a script or written answer. Just go through line by line and explain what the program does. When you are done, upload your recording to your Lehigh Drive and add a link below. 
 
-a16 stores an array whose length is up to (2^16)-1 elements:
-┌────────┬────────┬────────┬╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-│  0xad  │ZZZZZZZZ│ZZZZZZZZ│    N objects    ┆
-└────────┴────────┴────────┴╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+**💥IMPORTANT: Make sure you give blanket permission to the link holder to view the file**
 
-ZZZZZZZZZZZZZZZZ is a 16-bit unsigned integer which represents the length of the data
-```
+Paste Recording Link(s) Here: https://drive.google.com/file/d/1Nr_Y41oHWyFzkZvuzgXGdWP9fG0S_bbL/view?usp=sharing
 
-#### Maps
+## Evaluation
 
-Maps are for serializing datastructures that can be represented by key-value pairs. This includes associative arrays, structs, and objects.
+- Only files under version control in your forked assignment repository will be graded. Local files left untracked on your computer will not be considered.
 
-```
-m8 stores a map whose length is upto (2^8)-1 elements
-┌────────┬────────┬╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-│  0xae  │YYYYYYYY│   N*2 objects   ┆
-└────────┴────────┴╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+- Only code committed *and pushed* prior to the time of grading will be accepted. Locally committed but unpushed code will not be considered.
 
-YYYYYYYY is a 8-bit unsigned integer which represents the length of the data
+- Your assignment will be graded according to the [Programming Assignment Grading Rubric](https://drive.google.com/open?id=1V0nBt3Rz6uFMZ9mIaFioLF-48DFX0VdkbgRUDM_eIFk).
 
-m16 stores a map whose length is upto (2^16)-1 elements
-┌────────┬────────┬────────┬╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╮
-│  0xaf  │ZZZZZZZZ│ZZZZZZZZ│   N*2 objects   ┆
-└────────┴────────┴────────┴╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╯
+## Tips For Success 
 
-ZZZZZZZZZZZZZZZZ is a 16-bit unsigned integer which represents the length of the data
-```
+Some things to take into consideration when writing your assignment:
 
-For example, consider the following struct:
+- Start this project the day it's assigned. Use all the time allocated and don't create a situation where you are starting the project right before it is due.
 
-```
-struct Person {
-  char age;
-  float height;
-  string name;
-}
-```
+- At the very least, make sure your code compiles (on the Sunlab machines) before you submit it.
 
-You can serialize this into a map of maps. Let's say we have the following values in our struct:
+- Use meaningful function and variable names. This will make the code easier to read and understand, and will also make it easier to maintain in the future.
 
-```
-struct Person ann = { age: 10, height: 3.4, name: "Ann" };
-```
+- Adding comments to the code can help the graders understand what your code is doing, which can help them assign partial points to incorrect solutions.
 
-We could serialize this into the following byte vector:
+- Always check for errors when reading input, opening files, or allocating memory. This will help prevent crashes and other unexpected behavior.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│0xae   // map tag                                                            │
-│0x01   // 1 kv pair                                                          │
-├─────────────────────────────────────────────────────┬───────────┬───────────┤
-│0xaa   // string8 tag                                │           │           │
-│0x06   // 6 characters                               │ key       │           │
-│Person // the string "Person"                        │           │           │
-├─────────────────────────────────────────────────────┼───────────┤  pair 1   │
-│0xae   // the value associated with the key is a map │           │           │
-│0x03   // 3 kv pairs                                 │           │           │
-├──────────────────────────────┬───────────┬──────────┤           │           │
-│0xaa   // string8 tag         │           │          │           │           │
-│0x03   // 3 characters        │ key       │          │           │           │
-│age    // the string "age"    │           │          │           │           │
-├──────────────────────────────┼───────────┤ pair 1   │           │           │
-│0xa2   // u8 tag              │ value     │          │           │           │
-│0x0a   // 10                  │           │          │           │           │
-├──────────────────────────────┼───────────┼──────────┤           │           │
-│0xaa   // string8 tag         │           │          │ value     │           │
-│0x06   // 6 characters        │ key       │          │           │           │
-│height // the string "height" │           │          │           │           │
-├──────────────────────────────┼───────────┤ pair 2   │           │           │
-│0xa8   // f32 tag             │ value     │          │           │           │
-│3.4    // float value 3.4     │           │          │           │           │
-├──────────────────────────────┼───────────┼──────────┤           │           │
-│0xaa   // string8 tag         │           │          │           │           │
-│0x04   // 4 characters        │ key       │          │           │           │
-│name   // the string "name"   │           │          │           │           │
-├──────────────────────────────┼───────────┤ pair 3   │           │           │
-│0xaa   // string8 tag         │           │          │           │           │
-│0x03   // 3 characters        │ value     │          │           │           │
-│Ann    // the string "Ann"    │           │          │           │           │
-└──────────────────────────────┴───────────┴──────────┴───────────┴───────────┘           
-```
+- Free resources like file handles, socket handles, heap memory, etc. as soon as they are not needed anymore to avoid resource leaks.
 
-The total length of this byte vector would be 43 bytes.
+- Using the right data type can make your program more efficient and less error-prone. For example, use integers when working with whole numbers, and use floating-point numbers when working with decimal numbers. With systems software especially, we want to pay attention to this component of sofware design.
+
+- Test your code: Before releasing your code, make sure to test it thoroughly. Try to anticipate how users will use your program and test it under different conditions to make sure it works as expected.
+
+
+
