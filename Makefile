@@ -9,6 +9,10 @@ all:
 	mv libhashset.a build/lib/release
 	ar rs libhashset.so lib.o linkedlist.o
 	mv libhashset.so build/lib/release
+	g++ -g test/test.cpp -c
+	g++ -g -o main test.o build/lib/release/libhashset.a
+	mkdir -p build/bin
+	mv main build/bin
 	mv *.o build/objects
 
 static:
@@ -59,4 +63,5 @@ tests:
 	g++ -g test/test.cpp -c
 	g++ -g -o main test.o build/lib/release/libhashset.a
 	mv *.o build/objects
+	mkdir -p build/bin
 	mv main build/bin
